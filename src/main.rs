@@ -1,3 +1,5 @@
+use std::io::Read;
+
 use clap::Parser;
 
 macro_rules! set_panic {
@@ -89,7 +91,9 @@ fn rgb_scale(position: f64, gamma: f64, brightness: f64) -> (u8, u8, u8) {
 
 const HELP_MSG: &str = "Usage: `roygbiv [OPTIONS] TEXT`
 Avaliable options:
- -g :\tSet gamma level.";
+ -g :\tSet gamma level.
+ -p :\tOutputs RGB values based on a decimal between 0 and 1, inclusive.
+ -b :\tAdjusts the brightness. Default is 1.0";
 
 fn main() {
 
@@ -100,10 +104,10 @@ fn main() {
     let gamma = clapargs.gamma;
     //TODO: proper argument parsing
     
-    let char_count = clapargs.text.len();
-
     let mut output = String::new();
     let mut count = 1;
+
+    //println!("checkpoint 1");
 
     if clapargs.position >= 0.0 && clapargs.position <= 1.0 {
         let ratio = 380.0 + ( (780.0-380.0) * clapargs.position );
@@ -114,7 +118,63 @@ fn main() {
         return;
     }
 
-    for ch in clapargs.text.chars() {
+    let mut input_string = clapargs.text;
+
+    let mut inpipe = std::io::stdin();
+
+    //println!("checkpoint 2");
+
+    let mut pipestring = String::new();
+    //let mut pipestring = inpipe.lines().collect::<Result<String, std::io::Error>>();
+
+    use std::io::IsTerminal;
+    if !inpipe.is_terminal() {
+        let _ = inpipe.read_to_string(&mut pipestring);
+        if !pipestring.is_empty() {
+            //println!("DEBUG: got non-empty string");
+            input_string = pipestring.clone();
+        } else {
+            //println!("checkpoint 3");
+
+            //input_string = clapargs.text.clone();
+        }
+
+    }
+
+/*
+    match inpipe.read_line(&mut pipestring) {
+        Ok(0) => {},
+        _e => {
+        println!("{}", _e.unwrap());
+            while
+                if let Err(e) = inpipe.read_line(&mut pipestring) { 
+                    true 
+                } else {
+                    false
+                } {}
+        }
+        
+    }
+    */
+
+    //println!("checkpoint 2.1");
+
+
+    //println!("checkpoint 4");
+
+    //let pipestring = 
+
+    //println!("DEBUG: \n{}", pipestring.unwrap_or_else(|_| {String::new()}));
+
+    let char_count = input_string.chars().count() - 
+        match input_string.chars().last().unwrap_or(' ') {
+            '\n' => 1,
+            _ => 0
+        };
+
+    //println!("{char_count}");
+
+    for ch in input_string.chars() {
         let ratio = 380.0 + ( ( (780.0-380.0) / (char_count+1) as f64) * (count as f64) );
 
         let (r, g, b) = rgb_scale(ratio, gamma, clapargs.brightness);
@@ -131,5 +191,10 @@ fn main() {
         count += 1;
     }
 
-    println!("{}", output);
+    print!("{}{}", output,
+        match output.chars().last().unwrap_or(' ') {
+            '\n' => "",
+            _ => "\n"
+        }
+    );
 }
