@@ -120,27 +120,29 @@ fn main() {
 
     let mut input_string = clapargs.text;
 
-    let mut inpipe = std::io::stdin();
+    {
+        let mut inpipe = std::io::stdin();
 
-    //println!("checkpoint 2");
+        //println!("checkpoint 2");
 
-    let mut pipestring = String::new();
-    //let mut pipestring = inpipe.lines().collect::<Result<String, std::io::Error>>();
+        let mut pipestring = String::new();
+        //let mut pipestring = inpipe.lines().collect::<Result<String, std::io::Error>>();
 
-    use std::io::IsTerminal;
-    if !inpipe.is_terminal() {
-        let _ = inpipe.read_to_string(&mut pipestring);
-        if !pipestring.is_empty() {
-            //println!("DEBUG: got non-empty string");
-            input_string = pipestring.clone();
-        } else {
-            //println!("checkpoint 3");
+        use std::io::IsTerminal;
+        if !inpipe.is_terminal() {
+            let _ = inpipe.read_to_string(&mut pipestring);
+            if !pipestring.is_empty() {
+                //println!("DEBUG: got non-empty string");
+                pipestring.shrink_to_fit();
+                input_string = pipestring.clone();
+            } else {
+                //println!("checkpoint 3");
 
-            //input_string = clapargs.text.clone();
+                //input_string = clapargs.text.clone();
+            }
+
         }
-
     }
-
 /*
     match inpipe.read_line(&mut pipestring) {
         Ok(0) => {},
@@ -166,7 +168,7 @@ fn main() {
 
     //println!("DEBUG: \n{}", pipestring.unwrap_or_else(|_| {String::new()}));
 
-    let char_count = input_string.chars().count() - 
+    let mut char_count = input_string.chars().count() - 
         match input_string.chars().last().unwrap_or(' ') {
             '\n' => 1,
             _ => 0
@@ -175,13 +177,20 @@ fn main() {
     //println!("{char_count}");
 
     for ch in input_string.chars() {
-        let ratio = 380.0 + ( ( (780.0-380.0) / (char_count+1) as f64) * (count as f64) );
-
-        let (r, g, b) = rgb_scale(ratio, gamma, clapargs.brightness);
-        
         if ch == ' ' {
             output += " ";
+        } else if ch == '\n' {
+            output += "\n";
+            char_count -= 1;
+            continue;
         } else {
+
+            let ratio =
+                380.0 + 
+                ( ( (780.0-380.0) / (char_count+1) as f64)
+                * (count as f64) );
+            let (r, g, b) = rgb_scale(ratio, gamma, clapargs.brightness);
+       
             output += format!(
                 "\x1b[38;2;{};{};{}m{}",
                 r, g, b, ch
